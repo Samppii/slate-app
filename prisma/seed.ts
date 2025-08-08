@@ -1,14 +1,22 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  // Create demo user
-  const demoUser = await prisma.user.create({
-    data: {
+  // Create demo user with password
+  const hashedPassword = await bcrypt.hash('password123', 12)
+  
+  const demoUser = await prisma.user.upsert({
+    where: { email: 'demo@slate.com' },
+    update: {
+      password: hashedPassword,
+    },
+    create: {
       email: 'demo@slate.com',
       name: 'Demo User',
       role: 'ADMIN',
+      password: hashedPassword,
     },
   })
 
@@ -20,10 +28,9 @@ async function main() {
         email: 'john@example.com',
         phone: '+1-555-0123',
         department: 'Camera',
-        position: 'Director of Photography',
-        union: 'IATSE',
-        rate: 750.0,
-        createdById: demoUser.id,
+        role: 'Director of Photography',
+        notes: 'Experienced DP with 15+ years in features',
+        userId: demoUser.id,
       },
     }),
     prisma.crewMember.create({
@@ -32,10 +39,9 @@ async function main() {
         email: 'sarah@example.com',
         phone: '+1-555-0124',
         department: 'Sound',
-        position: 'Sound Mixer',
-        union: 'IATSE',
-        rate: 650.0,
-        createdById: demoUser.id,
+        role: 'Sound Mixer',
+        notes: 'Specializes in location recording',
+        userId: demoUser.id,
       },
     }),
     prisma.crewMember.create({
@@ -43,11 +49,10 @@ async function main() {
         name: 'Mike Rodriguez',
         email: 'mike@example.com',
         phone: '+1-555-0125',
-        department: 'Art',
-        position: 'Production Designer',
-        union: 'IATSE',
-        rate: 700.0,
-        createdById: demoUser.id,
+        department: 'Art Direction',
+        role: 'Production Designer',
+        notes: 'Award-winning production designer',
+        userId: demoUser.id,
       },
     }),
     prisma.crewMember.create({
@@ -56,9 +61,30 @@ async function main() {
         email: 'emily@example.com',
         phone: '+1-555-0126',
         department: 'Wardrobe',
-        position: 'Costume Designer',
-        rate: 600.0,
-        createdById: demoUser.id,
+        role: 'Costume Designer',
+        notes: 'Period and contemporary specialist',
+        userId: demoUser.id,
+      },
+    }),
+    prisma.crewMember.create({
+      data: {
+        name: 'Alex Thompson',
+        email: 'alex@example.com',
+        phone: '+1-555-0127',
+        department: 'Lighting',
+        role: 'Gaffer',
+        notes: 'Expert in LED and traditional lighting',
+        userId: demoUser.id,
+      },
+    }),
+    prisma.crewMember.create({
+      data: {
+        name: 'Maria Garcia',
+        email: 'maria@example.com',
+        phone: '+1-555-0128',
+        department: 'Script',
+        role: 'Script Supervisor',
+        userId: demoUser.id,
       },
     }),
   ])
@@ -101,13 +127,7 @@ async function main() {
           },
         ],
       },
-      callSheetCrew: {
-        create: crewMembers.map((crew) => ({
-          crewMemberId: crew.id,
-          callTime: '06:30',
-          notes: 'Standard call',
-        })),
-      },
+      // Note: CallSheetCrew relations will be handled separately if needed
     },
   })
 
@@ -129,7 +149,7 @@ async function main() {
   console.log('✅ Database seeded successfully!')
   console.log('📧 Demo user email: demo@slate.com')
   console.log('📊 Created 1 call sheet with 2 scenes')
-  console.log('👥 Created 4 crew members')
+  console.log('👥 Created 6 crew members')
   console.log('📋 Created 1 template')
 }
 

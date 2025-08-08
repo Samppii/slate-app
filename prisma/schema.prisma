@@ -126,18 +126,16 @@ model CrewMember {
   email       String?
   phone       String?
   department  String   // "Camera", "Sound", "Art", "Wardrobe", etc.
-  position    String   // "Director", "DP", "1st AC", etc.
-  union       String?  // "IATSE", "DGA", "SAG-AFTRA", etc.
-  rate        Float?   // Daily rate
+  role        String   // "Director", "DP", "1st AC", etc.
   notes       String?
   
   // Metadata
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  createdById String
+  userId      String
   
   // Relationships
-  createdBy   User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   callSheets  CallSheetCrew[]
 
   @@map("crew_members")
