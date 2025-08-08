@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  image       String?
+  role        UserRole @default(USER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  callSheets  CallSheet[]
+  crewMembers CrewMember[]
+  templates   Template[]
+
+  @@map("users")
+}
+
+model CallSheet {
+  id             String          @id @default(cuid())
+  title          String
+  shootDate      DateTime
+  callTime       String
+  location       String
+  mapLink        String?
+  status         CallSheetStatus @default(DRAFT)
+  projectType    String?
+  weather        String?
+  sunrise        String?
+  sunset         String?
+  generalNotes   String?
+  safetyNotes    String?
+  
+  // Metadata
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  createdById    String
+  
+  // Relationships
+  createdBy      User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  scenes         Scene[]
+  callSheetCrew  CallSheetCrew[]
+
+  @@map("call_sheets")
+}
+
+model Scene {
+  id           String    @id @default(cuid())
+  sceneNumber  String
+  description  String?
+  location     String?
+  timeOfDay    String?   // "Day", "Night", "Dawn", "Dusk"
+  pages        Float?    // e.g., 2.5 pages
+  estimatedTime String?  // e.g., "2 hours"
+  notes        String?
+  
+  // Relationships
+  callSheetId  String
+  callSheet    CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+
+  @@map("scenes")
+}
+
+model CrewMember {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  department  String   // "Camera", "Sound", "Art", "Wardrobe", etc.
+  position    String   // "Director", "DP", "1st AC", etc.
+  union       String?  // "IATSE", "DGA", "SAG-AFTRA", etc.
+  rate        Float?   // Daily rate
+  notes       String?
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+  
+  // Relationships
+  createdBy   User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  callSheets  CallSheetCrew[]
+
+  @@map("crew_members")
+}
+
+model CallSheetCrew {
+  id           String     @id @default(cuid())
+  callTime     String?    // Custom call time for this person
+  wrapTime     String?    // Expected wrap time
+  notes        String?    // Special notes for this person on this day
+  
+  // Relationships
+  callSheetId  String
+  crewMemberId String
+  callSheet    CallSheet  @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+  crewMember   CrewMember @relation(fields: [crewMemberId], references: [id], onDelete: Cascade)
+
+  @@unique([callSheetId, crewMemberId])
+  @@map("call_sheet_crew")
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  data        Json     // Stores the template structure as JSON
+  isPublic    Boolean  @default(false)
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+  
+  // Relationships
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@map("templates")
+}
+
+// Enums
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum CallSheetStatus {
+  DRAFT
+  SENT
+  ARCHIVED
+}
