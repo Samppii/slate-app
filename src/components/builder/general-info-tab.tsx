@@ -1,24 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { UseFormReturn, Controller } from "react-hook-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, MapPin } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+import { MapPin } from "lucide-react"
+import { CreateCallSheetData, UpdateCallSheetData } from "@/lib/validations/call-sheet"
 
-export function GeneralInfoTab() {
-  const [date, setDate] = useState<Date>()
-  const [formData, setFormData] = useState({
-    productionName: "",
-    callTime: "",
-    location: "",
-    mapLink: ""
-  })
+interface GeneralInfoTabProps {
+  form: UseFormReturn<CreateCallSheetData | UpdateCallSheetData>
+}
+
+export function GeneralInfoTab({ form }: GeneralInfoTabProps) {
+  const { control, formState: { errors } } = form
 
   return (
     <Card>
@@ -26,77 +20,187 @@ export function GeneralInfoTab() {
         <CardTitle>General Information</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Title */}
         <div className="space-y-2">
-          <Label htmlFor="production-name">Production Name</Label>
-          <Input
-            id="production-name"
-            placeholder="Enter production name"
-            value={formData.productionName}
-            onChange={(e) => setFormData({ ...formData, productionName: e.target.value })}
+          <Label htmlFor="title">Production Title *</Label>
+          <Controller
+            control={control}
+            name="title"
+            render={({ field }) => (
+              <Input 
+                id="title"
+                placeholder="Enter production title" 
+                {...field}
+              />
+            )}
           />
+          {errors.title && (
+            <p className="text-sm text-red-600">{errors.title.message}</p>
+          )}
+        </div>
+
+        {/* Project Type */}
+        <div className="space-y-2">
+          <Label htmlFor="projectType">Project Type</Label>
+          <Controller
+            control={control}
+            name="projectType"
+            render={({ field }) => (
+              <Input 
+                id="projectType"
+                placeholder="Feature Film, TV Series, Commercial, etc." 
+                {...field}
+              />
+            )}
+          />
+          {errors.projectType && (
+            <p className="text-sm text-red-600">{errors.projectType.message}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
+          {/* Date */}
           <div className="space-y-2">
-            <Label>Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
+            <Label htmlFor="shootDate">Shoot Date *</Label>
+            <Controller
+              control={control}
+              name="shootDate"
+              render={({ field }) => (
+                <Input
+                  id="shootDate"
+                  type="date"
+                  {...field}
                 />
-              </PopoverContent>
-            </Popover>
+              )}
+            />
+            {errors.shootDate && (
+              <p className="text-sm text-red-600">{errors.shootDate.message}</p>
+            )}
           </div>
 
+          {/* Call Time */}
           <div className="space-y-2">
-            <Label htmlFor="call-time">Call Time</Label>
-            <Input
-              id="call-time"
-              type="time"
-              value={formData.callTime}
-              onChange={(e) => setFormData({ ...formData, callTime: e.target.value })}
+            <Label htmlFor="callTime">Call Time *</Label>
+            <Controller
+              control={control}
+              name="callTime"
+              render={({ field }) => (
+                <Input
+                  id="callTime"
+                  type="time"
+                  placeholder="07:00"
+                  {...field}
+                />
+              )}
             />
+            {errors.callTime && (
+              <p className="text-sm text-red-600">{errors.callTime.message}</p>
+            )}
           </div>
         </div>
 
+        {/* Location */}
         <div className="space-y-2">
-          <Label htmlFor="location">Location</Label>
-          <div className="relative">
-            <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="location"
-              placeholder="Enter location address"
-              className="pl-10"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="map-link">Map Link</Label>
-          <Input
-            id="map-link"
-            type="url"
-            placeholder="https://maps.google.com/..."
-            value={formData.mapLink}
-            onChange={(e) => setFormData({ ...formData, mapLink: e.target.value })}
+          <Label htmlFor="location">Primary Location *</Label>
+          <Controller
+            control={control}
+            name="location"
+            render={({ field }) => (
+              <div className="relative">
+                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="location"
+                  placeholder="Enter primary shooting location"
+                  className="pl-10"
+                  {...field}
+                />
+              </div>
+            )}
           />
+          {errors.location && (
+            <p className="text-sm text-red-600">{errors.location.message}</p>
+          )}
+        </div>
+
+        {/* Map Link */}
+        <div className="space-y-2">
+          <Label htmlFor="mapLink">Google Maps Link</Label>
+          <Controller
+            control={control}
+            name="mapLink"
+            render={({ field }) => (
+              <Input
+                id="mapLink"
+                type="url"
+                placeholder="https://maps.google.com/?q=..."
+                {...field}
+              />
+            )}
+          />
+          {errors.mapLink && (
+            <p className="text-sm text-red-600">{errors.mapLink.message}</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          {/* Sunrise */}
+          <div className="space-y-2">
+            <Label htmlFor="sunrise">Sunrise</Label>
+            <Controller
+              control={control}
+              name="sunrise"
+              render={({ field }) => (
+                <Input
+                  id="sunrise"
+                  type="time"
+                  placeholder="06:30"
+                  {...field}
+                />
+              )}
+            />
+            {errors.sunrise && (
+              <p className="text-sm text-red-600">{errors.sunrise.message}</p>
+            )}
+          </div>
+
+          {/* Sunset */}
+          <div className="space-y-2">
+            <Label htmlFor="sunset">Sunset</Label>
+            <Controller
+              control={control}
+              name="sunset"
+              render={({ field }) => (
+                <Input
+                  id="sunset"
+                  type="time"
+                  placeholder="19:30"
+                  {...field}
+                />
+              )}
+            />
+            {errors.sunset && (
+              <p className="text-sm text-red-600">{errors.sunset.message}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Weather */}
+        <div className="space-y-2">
+          <Label htmlFor="weather">Weather Forecast</Label>
+          <Controller
+            control={control}
+            name="weather"
+            render={({ field }) => (
+              <Input
+                id="weather"
+                placeholder="Sunny, 75°F with light breeze"
+                {...field}
+              />
+            )}
+          />
+          {errors.weather && (
+            <p className="text-sm text-red-600">{errors.weather.message}</p>
+          )}
         </div>
       </CardContent>
     </Card>
