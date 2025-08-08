@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireAuth()
+    console.log('Session user:', session.user)
     
     const body = await request.json()
     const validatedData = CreateCrewMemberSchema.parse(body)

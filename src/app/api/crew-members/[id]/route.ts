@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server'
 import { requireAuth, createApiResponse, handleApiError } from '@/lib/api-utils'
 import { CrewMemberService } from '@/lib/services/crew-member-service'
 import { UpdateCrewMemberSchema } from '@/lib/validations/crew-member'
-import { use } from 'react'
 
 type RouteParams = {
   params: Promise<{ id: string }>
@@ -11,7 +10,7 @@ type RouteParams = {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await requireAuth()
-    const { id } = use(params)
+    const { id } = (await params)
     
     const crewMember = await CrewMemberService.getCrewMember(session.user.id!, id)
     
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await requireAuth()
-    const { id } = use(params)
+    const { id } = (await params)
     
     const body = await request.json()
     const validatedData = UpdateCrewMemberSchema.parse(body)
@@ -40,7 +39,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await requireAuth()
-    const { id } = use(params)
+    const { id } = (await params)
     
     await CrewMemberService.deleteCrewMember(session.user.id!, id)
     

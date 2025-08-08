@@ -16,6 +16,9 @@ export function apiResponse<T = any>(
   })
 }
 
+// Alias for backwards compatibility
+export const createApiResponse = apiResponse
+
 // Error response wrapper
 export function apiError(
   error: string,

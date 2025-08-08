@@ -41,13 +41,17 @@ export function PDFExportDialog({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const { addNotification } = useSafeUiStore()
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    if (isNaN(dateObj.getTime())) {
+      return 'Invalid Date'
+    }
     return new Intl.DateTimeFormat('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    }).format(date)
+    }).format(dateObj)
   }
 
   const formatTime = (time: string) => {
@@ -206,14 +210,14 @@ export function PDFExportDialog({
               <div className="flex items-center justify-between">
                 <Badge 
                   variant={
-                    callSheet.status === 'PUBLISHED' ? 'default' :
+                    callSheet.status === 'SENT' ? 'default' :
                     callSheet.status === 'DRAFT' ? 'secondary' : 'outline'
                   }
                 >
                   {callSheet.status}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  Created {callSheet.createdAt.toLocaleDateString()}
+                  Created {new Date(callSheet.createdAt).toLocaleDateString()}
                 </span>
               </div>
 

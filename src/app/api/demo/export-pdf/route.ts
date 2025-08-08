@@ -94,7 +94,7 @@ const mockCallSheet = {
   callTime: '07:00',
   location: '123 Hollywood Blvd, Los Angeles, CA 90028',
   mapLink: 'https://maps.google.com/?q=123+Hollywood+Blvd',
-  status: 'PUBLISHED' as const,
+  status: 'SENT' as const,
   projectType: 'Feature Film',
   weather: 'Sunny, 75°F',
   sunrise: '6:45 AM',

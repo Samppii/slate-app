@@ -289,6 +289,7 @@ export function CrewMemberTable({
       {/* Edit Dialog */}
       {editingMember && (
         <EditCrewMemberDialog
+          key={`edit-dialog-${editingMember.id}`}
           member={editingMember}
           open={!!editingMember}
           onOpenChange={(open) => !open && setEditingMember(null)}

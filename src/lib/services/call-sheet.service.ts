@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/db'
 import { CallSheetQuery, CreateCallSheetData, UpdateCallSheetData } from '@/lib/validations/call-sheet'
 import { Prisma } from '@prisma/client'
 
@@ -25,7 +25,7 @@ const callSheetInclude = {
           email: true,
           phone: true,
           department: true,
-          position: true,
+          role: true,
         }
       }
     }

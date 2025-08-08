@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { UpdateCrewMemberSchema, UpdateCrewMemberData } from '@/lib/validations/crew-member'
 import { useUpdateCrewMember, useDepartments, useRoles } from '@/lib/hooks/use-crew-members'
 import { CrewMember } from '@prisma/client'
@@ -45,13 +46,23 @@ export function EditCrewMemberDialog({
   onOpenChange 
 }: EditCrewMemberDialogProps) {
   const [selectedDepartment, setSelectedDepartment] = useState(member.department)
+  const [showCustomDepartment, setShowCustomDepartment] = useState(false)
+  const [showCustomRole, setShowCustomRole] = useState(false)
+  
+  // Don't render anything if dialog is not open
+  if (!open) {
+    return null
+  }
   
   const updateMutation = useUpdateCrewMember()
   const { data: departmentsData } = useDepartments()
   const { data: rolesData } = useRoles(selectedDepartment)
 
-  const form = useForm<UpdateCrewMemberData>({
-    resolver: zodResolver(UpdateCrewMemberSchema),
+  const form = useForm<UpdateCrewMemberData & { customDepartment?: string; customRole?: string }>({
+    resolver: zodResolver(UpdateCrewMemberSchema.extend({
+      customDepartment: z.string().optional(),
+      customRole: z.string().optional(),
+    })),
     defaultValues: {
       name: member.name,
       role: member.role,
@@ -59,6 +70,8 @@ export function EditCrewMemberDialog({
       email: member.email || '',
       phone: member.phone || '',
       notes: member.notes || '',
+      customDepartment: '',
+      customRole: '',
     },
   })
 
@@ -71,15 +84,20 @@ export function EditCrewMemberDialog({
       email: member.email || '',
       phone: member.phone || '',
       notes: member.notes || '',
+      customDepartment: '',
+      customRole: '',
     })
     setSelectedDepartment(member.department)
   }, [member, form])
 
-  const onSubmit = async (data: UpdateCrewMemberData) => {
+  const onSubmit = async (data: UpdateCrewMemberData & { customDepartment?: string; customRole?: string }) => {
     try {
+      // Remove the custom fields from the final data since we now directly use the main fields
+      const { customDepartment, customRole, ...finalData } = data
+
       await updateMutation.mutateAsync({
         id: member.id,
-        data
+        data: finalData
       })
       onOpenChange(false)
     } catch (error) {
@@ -148,36 +166,37 @@ export function EditCrewMemberDialog({
             />
 
             {/* Department */}
-            <FormField
-              control={form.control}
-              name="department"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Department *</FormLabel>
-                  <FormControl>
-                    <Select
-                      value={field.value}
-                      onValueChange={handleDepartmentChange}
-                    >
+            {!showCustomDepartment && (
+              <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department *</FormLabel>
+                    <FormControl>
+                      <Select
+                        value={field.value}
+                        onValueChange={handleDepartmentChange}
+                      >
                       <SelectTrigger>
                         <SelectValue placeholder="Select or type department" />
                       </SelectTrigger>
                       <SelectContent>
                         {/* Current department first if it's not in common list */}
                         {field.value && !commonDepartments.includes(field.value) && (
-                          <SelectItem value={field.value}>
+                          <SelectItem key={`current-dept-${field.value}`} value={field.value}>
                             {field.value} (current)
                           </SelectItem>
                         )}
-                        {commonDepartments.map((dept) => (
-                          <SelectItem key={dept} value={dept}>
+                        {commonDepartments.map((dept, index) => (
+                          <SelectItem key={`common-dept-${index}-${dept}`} value={dept}>
                             {dept}
                           </SelectItem>
                         ))}
                         {departmentsData?.departments
                           .filter(dept => dept !== field.value && !commonDepartments.includes(dept))
-                          .map((dept) => (
-                            <SelectItem key={dept} value={dept}>
+                          .map((dept, index) => (
+                            <SelectItem key={`dept-${index}-${dept}`} value={dept}>
                               {dept}
                             </SelectItem>
                           ))}
@@ -188,10 +207,29 @@ export function EditCrewMemberDialog({
                 </FormItem>
               )}
             />
+            )}
+
+            {/* Custom Department Toggle */}
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-muted-foreground">Need a custom department?</label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowCustomDepartment(!showCustomDepartment)
+                  if (!showCustomDepartment) {
+                    form.setValue('department', '')
+                    setSelectedDepartment('')
+                  }
+                }}
+              >
+                {showCustomDepartment ? 'Select from list' : 'Add custom department'}
+              </Button>
+            </div>
 
             {/* Custom Department Input */}
-            {!commonDepartments.includes(form.watch('department') || '') && 
-             !departmentsData?.departments.includes(form.watch('department') || '') && (
+            {showCustomDepartment && (
               <FormField
                 control={form.control}
                 name="department"
@@ -203,7 +241,7 @@ export function EditCrewMemberDialog({
                         placeholder="Enter custom department name" 
                         {...field}
                         onChange={(e) => {
-                          field.onChange(e)
+                          field.onChange(e.target.value)
                           setSelectedDepartment(e.target.value)
                         }}
                       />
@@ -215,42 +253,60 @@ export function EditCrewMemberDialog({
             )}
 
             {/* Role */}
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Role *</FormLabel>
-                  <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
+            {!showCustomRole && (
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role *</FormLabel>
+                    <FormControl>
+                      <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select or type role" />
                       </SelectTrigger>
                       <SelectContent>
-                        {/* Current role first if it's not in available roles */}
-                        {field.value && 
-                         !rolesData?.roles.includes(field.value) && 
-                         !commonRoles.includes(field.value) && (
-                          <SelectItem value={field.value}>
-                            {field.value} (current)
-                          </SelectItem>
-                        )}
-                        
-                        {/* Show roles from selected department first */}
-                        {rolesData?.roles.map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {role}
-                          </SelectItem>
-                        ))}
-                        
-                        {/* Show common roles */}
-                        {commonRoles
-                          .filter(role => !rolesData?.roles.includes(role))
-                          .map((role) => (
-                            <SelectItem key={role} value={role}>
-                              {role}
-                            </SelectItem>
-                          ))}
+                        {/* Get all unique roles */}
+                        {(() => {
+                          const allRoles = new Set()
+                          const roleItems = []
+                          
+                          // Add current role first if it exists and is not empty
+                          if (field.value && field.value.trim()) {
+                            allRoles.add(field.value)
+                            roleItems.push(
+                              <SelectItem key={`current-role-${field.value}`} value={field.value}>
+                                {field.value} {!rolesData?.roles.includes(field.value) && !commonRoles.includes(field.value) ? '(current)' : ''}
+                              </SelectItem>
+                            )
+                          }
+                          
+                          // Add department roles
+                          rolesData?.roles?.forEach((role, index) => {
+                            if (!allRoles.has(role)) {
+                              allRoles.add(role)
+                              roleItems.push(
+                                <SelectItem key={`dept-role-${index}-${role}`} value={role}>
+                                  {role}
+                                </SelectItem>
+                              )
+                            }
+                          })
+                          
+                          // Add common roles
+                          commonRoles.forEach((role, index) => {
+                            if (!allRoles.has(role)) {
+                              allRoles.add(role)
+                              roleItems.push(
+                                <SelectItem key={`common-role-${index}-${role}`} value={role}>
+                                  {role}
+                                </SelectItem>
+                              )
+                            }
+                          })
+                          
+                          return roleItems
+                        })()}
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -258,10 +314,28 @@ export function EditCrewMemberDialog({
                 </FormItem>
               )}
             />
+            )}
+
+            {/* Custom Role Toggle */}
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-muted-foreground">Need a custom role?</label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowCustomRole(!showCustomRole)
+                  if (!showCustomRole) {
+                    form.setValue('role', '')
+                  }
+                }}
+              >
+                {showCustomRole ? 'Select from list' : 'Add custom role'}
+              </Button>
+            </div>
 
             {/* Custom Role Input */}
-            {!rolesData?.roles.includes(form.watch('role') || '') && 
-             !commonRoles.includes(form.watch('role') || '') && (
+            {showCustomRole && (
               <FormField
                 control={form.control}
                 name="role"

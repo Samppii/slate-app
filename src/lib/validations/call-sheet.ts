@@ -18,7 +18,9 @@ export const createCallSheetSchema = z.object({
   shootDate: z.string().transform((date) => new Date(date)),
   callTime: z.string().min(1, 'Call time is required'),
   location: z.string().min(1, 'Location is required').max(500, 'Location too long'),
-  mapLink: z.string().url('Invalid map link').optional(),
+  mapLink: z.string().optional().refine((val) => !val || val === '' || z.string().url().safeParse(val).success, {
+    message: 'Invalid map link format'
+  }),
   projectType: z.string().optional(),
   weather: z.string().max(100, 'Weather description too long').optional(),
   sunrise: z.string().optional(),
@@ -27,6 +29,7 @@ export const createCallSheetSchema = z.object({
   safetyNotes: z.string().max(2000, 'Safety notes too long').optional(),
   scenes: z.array(sceneSchema).default([]),
   crewMemberIds: z.array(z.string()).default([]),
+  status: z.enum(['DRAFT', 'SENT', 'ARCHIVED']).optional(),
 })
 
 // Call sheet update schema (all fields optional)
@@ -35,7 +38,9 @@ export const updateCallSheetSchema = z.object({
   shootDate: z.string().transform((date) => new Date(date)).optional(),
   callTime: z.string().min(1, 'Call time is required').optional(),
   location: z.string().min(1, 'Location is required').max(500, 'Location too long').optional(),
-  mapLink: z.string().url('Invalid map link').optional(),
+  mapLink: z.string().optional().refine((val) => !val || val === '' || z.string().url().safeParse(val).success, {
+    message: 'Invalid map link format'
+  }),
   projectType: z.string().optional(),
   weather: z.string().max(100, 'Weather description too long').optional(),
   sunrise: z.string().optional(),
@@ -49,11 +54,11 @@ export const updateCallSheetSchema = z.object({
 
 // Query parameters for listing call sheets
 export const callSheetQuerySchema = z.object({
-  page: z.string().transform((p) => parseInt(p) || 1).optional(),
-  limit: z.string().transform((l) => Math.min(parseInt(l) || 10, 50)).optional(),
-  status: z.enum(['DRAFT', 'SENT', 'ARCHIVED']).optional(),
-  projectType: z.string().optional(),
-  search: z.string().optional(),
+  page: z.string().nullable().transform((p) => parseInt(p || '1') || 1).optional(),
+  limit: z.string().nullable().transform((l) => Math.min(parseInt(l || '10') || 10, 50)).optional(),
+  status: z.enum(['DRAFT', 'SENT', 'ARCHIVED']).nullable().optional(),
+  projectType: z.string().nullable().optional(),
+  search: z.string().nullable().optional(),
   sortBy: z.enum(['title', 'shootDate', 'createdAt', 'status']).default('shootDate'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 })

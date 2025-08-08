@@ -1,10 +1,23 @@
 "use client"
 
+import { UseFormReturn } from "react-hook-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
+import { CreateCallSheetData, UpdateCallSheetData } from "@/lib/validations/call-sheet"
+import { CallSheetWithRelations } from "@/lib/types/database"
 
-export function PreviewTab() {
+interface PreviewTabProps {
+  form: UseFormReturn<CreateCallSheetData | UpdateCallSheetData>
+  callSheet?: CallSheetWithRelations
+}
+
+export function PreviewTab({ form, callSheet }: PreviewTabProps) {
+  const formData = form.watch()
+  const title = formData.title || 'Call Sheet Preview'
+  const shootDate = formData.shootDate ? new Date(formData.shootDate).toLocaleDateString() : 'TBD'
+  const callTime = formData.callTime || 'TBD'
+  const location = formData.location || 'TBD'
   // This is a mock preview - in production, this would generate an actual PDF preview
   return (
     <Card>
@@ -16,8 +29,8 @@ export function PreviewTab() {
           <div className="space-y-6 max-w-2xl mx-auto">
             {/* Header */}
             <div className="text-center space-y-2">
-              <h1 className="text-3xl font-bold">PRODUCTION TITLE</h1>
-              <p className="text-lg">Call Sheet #1</p>
+              <h1 className="text-3xl font-bold">{title.toUpperCase()}</h1>
+              <p className="text-lg">Call Sheet</p>
               <p className="text-muted-foreground">Monday, January 15, 2024</p>
             </div>
 

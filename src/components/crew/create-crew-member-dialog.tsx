@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { CreateCrewMemberSchema, CreateCrewMemberData } from '@/lib/validations/crew-member'
 import { useCreateCrewMember, useDepartments, useRoles } from '@/lib/hooks/use-crew-members'
 import {
@@ -44,8 +45,11 @@ export function CreateCrewMemberDialog({ open, onOpenChange }: CreateCrewMemberD
   const { data: departmentsData } = useDepartments()
   const { data: rolesData } = useRoles(selectedDepartment)
 
-  const form = useForm<CreateCrewMemberData>({
-    resolver: zodResolver(CreateCrewMemberSchema),
+  const form = useForm<CreateCrewMemberData & { customDepartment?: string; customRole?: string }>({
+    resolver: zodResolver(CreateCrewMemberSchema.extend({
+      customDepartment: z.string().optional(),
+      customRole: z.string().optional(),
+    })),
     defaultValues: {
       name: '',
       role: '',
@@ -53,12 +57,24 @@ export function CreateCrewMemberDialog({ open, onOpenChange }: CreateCrewMemberD
       email: '',
       phone: '',
       notes: '',
+      customDepartment: '',
+      customRole: '',
     },
   })
 
-  const onSubmit = async (data: CreateCrewMemberData) => {
+  const onSubmit = async (data: CreateCrewMemberData & { customDepartment?: string; customRole?: string }) => {
     try {
-      await createMutation.mutateAsync(data)
+      // Handle custom department and role
+      const processedData: CreateCrewMemberData = {
+        ...data,
+        department: data.department === '__other_department__' ? data.customDepartment || '' : data.department,
+        role: data.role === '__other_role__' ? data.customRole || '' : data.role,
+      }
+
+      // Remove the custom fields from the final data
+      const { customDepartment, customRole, ...finalData } = processedData
+
+      await createMutation.mutateAsync(finalData)
       form.reset()
       setSelectedDepartment('')
       onOpenChange(false)
@@ -155,6 +171,7 @@ export function CreateCrewMemberDialog({ open, onOpenChange }: CreateCrewMemberD
                             </SelectItem>
                           )
                         )}
+                        <SelectItem key="custom-department-option" value="__other_department__">Other (Custom Department)</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -164,11 +181,10 @@ export function CreateCrewMemberDialog({ open, onOpenChange }: CreateCrewMemberD
             />
 
             {/* Custom Department Input */}
-            {!commonDepartments.includes(form.watch('department')) && 
-             !departmentsData?.departments.includes(form.watch('department')) && (
+            {form.watch('department') === '__other_department__' && (
               <FormField
                 control={form.control}
-                name="department"
+                name="customDepartment"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Custom Department</FormLabel>
@@ -177,7 +193,7 @@ export function CreateCrewMemberDialog({ open, onOpenChange }: CreateCrewMemberD
                         placeholder="Enter custom department name" 
                         {...field}
                         onChange={(e) => {
-                          field.onChange(e)
+                          field.onChange(e.target.value)
                           setSelectedDepartment(e.target.value)
                         }}
                       />
@@ -202,18 +218,21 @@ export function CreateCrewMemberDialog({ open, onOpenChange }: CreateCrewMemberD
                       </SelectTrigger>
                       <SelectContent>
                         {/* Show roles from selected department first */}
-                        {rolesData?.roles.map((role) => (
+                        {rolesData?.roles?.map((role) => (
                           <SelectItem key={role} value={role}>
                             {role}
                           </SelectItem>
                         ))}
                         
-                        {/* Show common roles if no department selected */}
-                        {!selectedDepartment && commonRoles.map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {role}
-                          </SelectItem>
-                        ))}
+                        {/* Always show common roles, but filter out duplicates */}
+                        {commonRoles
+                          .filter(role => !rolesData?.roles?.includes(role))
+                          .map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {role}
+                            </SelectItem>
+                          ))}
+                        <SelectItem key="custom-role-option" value="__other_role__">Other (Custom Role)</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -223,11 +242,10 @@ export function CreateCrewMemberDialog({ open, onOpenChange }: CreateCrewMemberD
             />
 
             {/* Custom Role Input */}
-            {!rolesData?.roles.includes(form.watch('role')) && 
-             !commonRoles.includes(form.watch('role')) && (
+            {form.watch('role') === '__other_role__' && (
               <FormField
                 control={form.control}
-                name="role"
+                name="customRole"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Custom Role</FormLabel>

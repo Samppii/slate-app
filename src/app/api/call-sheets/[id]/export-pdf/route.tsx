@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { requireAuth, createApiResponse, handleApiError } from '@/lib/api-utils'
-import { CallSheetService } from '@/lib/services/call-sheet-service'
+import { CallSheetService } from '@/lib/services/call-sheet.service'
 import { CallSheetPDF } from '@/lib/pdf/call-sheet-template'
-import { use } from 'react'
 
 type RouteParams = {
   params: Promise<{ id: string }>
@@ -12,10 +11,10 @@ type RouteParams = {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await requireAuth()
-    const { id } = use(params)
+    const { id } = await params
     
     // Get the call sheet with all related data
-    const callSheet = await CallSheetService.getCallSheet(session.user.id!, id)
+    const callSheet = await CallSheetService.getCallSheet(id, session.user.id!)
     
     if (!callSheet) {
       return NextResponse.json(

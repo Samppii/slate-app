@@ -69,6 +69,20 @@ export class CrewMemberService {
   }
 
   static async createCrewMember(userId: string, data: CreateCrewMemberData) {
+    console.log('Creating crew member with userId:', userId)
+    
+    // Verify user exists
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId }
+    })
+    
+    if (!userExists) {
+      console.error('User not found:', userId)
+      throw new Error('User not found')
+    }
+    
+    console.log('User found:', userExists.email)
+    
     // Check for duplicate name within user's crew
     const existing = await prisma.crewMember.findFirst({
       where: {

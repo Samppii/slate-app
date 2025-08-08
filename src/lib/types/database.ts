@@ -11,10 +11,21 @@ import {
 
 // Extended types with relations
 export type CallSheetWithRelations = CallSheet & {
-  createdBy: User
+  createdBy: {
+    id: string
+    name: string | null
+    email: string
+  }
   scenes: Scene[]
   callSheetCrew: (CallSheetCrew & {
-    crewMember: CrewMember
+    crewMember: {
+      id: string
+      name: string
+      email: string | null
+      phone: string | null
+      department: string
+      role: string
+    }
   })[]
 }
 
